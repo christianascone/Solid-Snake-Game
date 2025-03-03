@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+      #game-area {
+          position: relative;
+          width: 400px;
+          height: 400px;
+          border: 1px solid black;
+          background-color: #f0f0f0;
+          margin: 20px auto;
+          background-color: transparent;
+      }
+      #game-area-background {
+          position: relative;
+          width: 400px;
+          height: 400px;
+          background-image: url('https://static.wikia.nocookie.net/metalgear/images/5/50/MGS1_Solid_Snake.png/revision/latest?cb=20140511114703');
+          background-size: contain;
+          background-repeat: no-repeat;
+          background-position: center;
+          opacity: 0.5;
+      }
+      .snake-segment {
+          position: absolute;
+          width: 20px;
+          height: 20px;
+          background-color: green;
+      }
+      .snake-head {
+        background-color: darkgreen;
+      }
+      .food {
+          position: absolute;
+          width: 20px;
+          height: 20px;
+          background-color: red;
+      }
+      .snake-head::before, .snake-head::after {
+          content: '';
+          position: absolute;
+          width: 4px;
+          height: 4px;
+          background-color: black;
+      }
+      .head-right::before {
+          left: 12px;
+          top: 4px;
+      }
+      .head-right::after {
+          left: 12px;
+          top: 12px;
+      }
+      .head-left::before {
+          left: 4px;
+          top: 4px;
+      }
+      .head-left::after {
+          left: 4px;
+          top: 12px;
+      }
+      .head-up::before {
+          left: 4px;
+          top: 4px;
+      }
+      .head-up::after {
+          left: 12px;
+          top: 4px;
+      }
+      .head-down::before {
+          left: 4px;
+          top: 12px;
+      }
+      .head-down::after {
+          left: 12px;
+          top: 12px;
+      }
+      #score {
+          text-align: center;
+          font-size: 20px;
+          margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="score">Score: 0</div>
+    <div id="game-area">
+      <div id="game-area-background"></div>
+    </div>
+    <script>
+      const gameArea = document.getElementById('game-area');
+      const scoreDisplay = document.getElementById('score');
+      const gridSize = 20; // Each cell is 20px
+      const gameSize = 20; // 20x20 grid
+
+      let snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
+      let direction = 'right';
+      let food = {x: 15, y: 10};
+      let score = 0;
+      let gameInterval;
+      const segmentDivs = [];
+
+      // Initialize the game
+      function initGame() {
+          // Create initial snake segments
+          snake.forEach((segment, index) => {
+              const div = document.createElement('div');
+              div.className = 'snake-segment';
+              if (index === 0) {
+                  div.classList.add('snake-head', 'head-' + direction);
+              }
+              setPosition(div, segment);
+              gameArea.appendChild(div);
+              segmentDivs.push(div);
+          });
+
+          // Create food
+          const foodDiv = document.createElement('div');
+          foodDiv.className = 'food';
+          setPosition(foodDiv, food);
+          gameArea.appendChild(foodDiv);
+
+          // Start game loop
+          gameInterval = setInterval(move, 200);
+
+          // Handle key presses
+          document.addEventListener('keydown', handleKeyPress);
+      }
+
+      // Set the position of an element based on grid coordinates
+      function setPosition(element, pos) {
+          element.style.left = pos.x * gridSize + 'px';
+          element.style.top = pos.y * gridSize + 'px';
+      }
+
+      // Handle direction changes via arrow keys
+      function handleKeyPress(event) {
+          let newDirection;
+          if (event.key === 'ArrowRight' && direction !== 'left') newDirection = 'right';
+          else if (event.key === 'ArrowLeft' && direction !== 'right') newDirection = 'left';
+          else if (event.key === 'ArrowUp' && direction !== 'down') newDirection = 'up';
+          else if (event.key === 'ArrowDown' && direction !== 'up') newDirection = 'down';
+          if (newDirection) {
+              direction = newDirection;
+          }
+      }
+
+      // Move the snake
+      function move() {
+          const head = snake[0];
+          let newHead;
+
+          // Calculate new head position based on direction
+          if (direction === 'right') newHead = {x: head.x + 1, y: head.y};
+          else if (direction === 'left') newHead = {x: head.x - 1, y: head.y};
+          else if (direction === 'up') newHead = {x: head.x, y: head.y - 1};
+          else if (direction === 'down') newHead = {x: head.x, y: head.y + 1};
+
+          // Check for wall collision
+          if (newHead.x < 0 || newHead.x >= gameSize || newHead.y < 0 || newHead.y >= gameSize) {
+              gameOver();
+              return;
+          }
+
+          // Check if snake eats food
+          let ateFood = false;
+          if (newHead.x === food.x && newHead.y === food.y) {
+              ateFood = true;
+              score++;
+              scoreDisplay.textContent = 'Score: ' + score;
+              placeNewFood();
+          }
+
+          // Update snake positions
+          snake.unshift(newHead);
+          if (!ateFood) {
+              snake.pop();
+          }
+
+          // Update DOM
+          let newHeadDiv;
+          if (ateFood) {
+              // Create new div for head when eating
+              newHeadDiv = document.createElement('div');
+              newHeadDiv.className = 'snake-segment snake-head head-' + direction;
+              setPosition(newHeadDiv, newHead);
+              gameArea.appendChild(newHeadDiv);
+              segmentDivs.unshift(newHeadDiv);
+          } else {
+              // Reuse tail div as new head
+              const tailDiv = segmentDivs.pop();
+              tailDiv.className = 'snake-segment snake-head head-' + direction;
+              setPosition(tailDiv, newHead);
+              segmentDivs.unshift(tailDiv);
+          }
+
+          // Remove head class from previous head
+          if (segmentDivs.length > 1) {
+              segmentDivs[1].classList.remove('snake-head', 'head-right', 'head-left', 'head-up', 'head-down');
+              segmentDivs[1].className = 'snake-segment';
+          }
+
+          // Check for body collision
+          for (let i = 1; i < snake.length; i++) {
+              if (snake[i].x === newHead.x && snake[i].y === newHead.y) {
+                  gameOver();
+                  return;
+              }
+          }
+      }
+
+      // Place new food at a random empty position
+      function placeNewFood() {
+          let newFood;
+          do {
+              newFood = {
+                  x: Math.floor(Math.random() * gameSize),
+                  y: Math.floor(Math.random() * gameSize)
+              };
+          } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+          food = newFood;
+          const foodDiv = document.querySelector('.food');
+          setPosition(foodDiv, food);
+      }
+
+      // End the game
+      function gameOver() {
+          clearInterval(gameInterval);
+          alert('Game Over! Score: ' + score);
+      }
+
+      // Start the game when the page loads
+      window.onload = initGame;
+    </script>
+  </body>
+</html>
