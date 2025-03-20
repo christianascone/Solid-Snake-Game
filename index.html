@@ -101,6 +101,7 @@
       let food = {x: 15, y: 10};
       let score = 0;
       let gameInterval;
+      let pressed = false;
       const segmentDivs = [];
 
       // Initialize the game
@@ -138,6 +139,7 @@
 
       // Handle direction changes via arrow keys
       function handleKeyPress(event) {
+          if (pressed) return;
           let newDirection;
           if (event.key === 'ArrowRight' && direction !== 'left') newDirection = 'right';
           else if (event.key === 'ArrowLeft' && direction !== 'right') newDirection = 'left';
@@ -145,6 +147,7 @@
           else if (event.key === 'ArrowDown' && direction !== 'up') newDirection = 'down';
           if (newDirection) {
               direction = newDirection;
+              pressed = true;
           }
       }
 
@@ -210,6 +213,8 @@
                   return;
               }
           }
+
+          pressed = false;
       }
 
       // Place new food at a random empty position
